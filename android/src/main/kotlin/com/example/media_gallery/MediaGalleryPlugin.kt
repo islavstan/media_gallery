@@ -222,7 +222,7 @@ class MediaGalleryPlugin: FlutterPlugin, MethodCallHandler {
     return listOf()
   }
 
-  private fun listImages(collectionId: String, skip: Int?, take: Int?) : Map<String,Any> {
+  private fun listImages(collectionId: String, skip: Int?, take: Int?) : Map<String,Any>? {
     val medias = mutableListOf<Map<String, Any>>()
     val offset = skip ?: 0
     var total = 0
@@ -230,16 +230,18 @@ class MediaGalleryPlugin: FlutterPlugin, MethodCallHandler {
     this.context.let { context ->
       if (context is Context) {
 
-          val imageCountCursor = context.contentResolver.query(
-                  MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                  arrayOf("count(*) AS count"),
-                  if (collectionId == "__ALL__") null else "bucket_id = $collectionId",
-                  null,
-                  null)
-          imageCountCursor!!.moveToFirst()
+        val imageCountCursor = context.contentResolver.query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                arrayOf(MediaStore.Images.Media._ID), // <-- this line
+                if (collectionId == "__ALL__") null else "bucket_id = $collectionId",
+                null,
+                null)
+        if (imageCountCursor != null && imageCountCursor.moveToFirst()) {
           total += imageCountCursor.getInt(0)
           imageCountCursor.close()
-
+        } else {
+          return null
+        }
           // Getting range of images
           val limit = take ?: (total - offset)
           val orderBy = MediaStore.Images.Media.DATE_TAKEN + " DESC"
